@@ -1,0 +1,25 @@
+STOCKPREDICT/
+│
+├── data/
+│   ├── raw/
+│   │   └── aapl_ohlc.csv
+│   │
+│   └── processed/
+│       └── aapl_features.csv
+│
+├── notebooks/
+│   └── data_exploration.ipynb
+│
+├── src/
+│   ├── data_acquisition.py
+│   ├── feature_engineering.py
+│   ├── train_model.py
+│   ├── predict.py
+│   └── paper_trade.py
+│
+├── models/
+│   └── trained_model.pkl
+│
+├── .gitignore
+├── requirements.txt
+└── README.md
