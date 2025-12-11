@@ -6,7 +6,7 @@ import yfinance as yf # Import the yfinance library
 # -----------------------------
 # CONFIG
 # -----------------------------
-STOCK_SYMBOL = "AAPL"          # Yahoo Finance uses uppercase for ticker symbols
+STOCK_SYMBOL = "TSLA"          # Yahoo Finance uses uppercase for ticker symbols
 START_DATE = "2023-01-01"
 END_DATE = "2023-06-01"
 
