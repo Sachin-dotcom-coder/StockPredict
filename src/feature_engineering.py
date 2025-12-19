@@ -5,6 +5,8 @@ from pathlib import Path
 # CONFIG
 # -------------------------------
 STOCK_SYMBOLS = ["AAPL", "TSLA"]
+TRANSACTION_COST_PCT = 0.0004  # 0.04% per trade (Indian market average)
+MIN_PROFIT_THRESHOLD = 0.0015  # 0.15% minimum move to be profitable (0.08% costs + 0.07% buffer)
 
 # -------------------------------
 # FEATURE ENGINEERING FOR 5-MINUTE INTERVAL DATA
@@ -80,11 +82,64 @@ for STOCK_SYMBOL in STOCK_SYMBOLS:
 
     # 6. Period Returns
     df["Minute_Return"] = df["Close"].pct_change()
+    
+    # 7. Volume-based Indicators
+    df["Volume_EMA_10"] = df["Volume"].ewm(span=10, adjust=False).mean()
+    df["Volume_Ratio"] = df["Volume"] / df["Volume_EMA_10"]  # Current volume vs average
+    df["Volume_SMA_20"] = df["Volume"].rolling(window=20).mean()
+    df["Volume_Trend"] = (df["Volume"] > df["Volume_SMA_20"]).astype(int)  # 1 if above average
+    
+    # 8. ATR (Average True Range) - Volatility indicator
+    high_low = df["High"] - df["Low"]
+    high_close = abs(df["High"] - df["Close"].shift(1))
+    low_close = abs(df["Low"] - df["Close"].shift(1))
+    true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+    df["ATR_14"] = true_range.rolling(window=14).mean()
+    df["ATR_Pct"] = df["ATR_14"] / df["Close"]  # ATR as percentage of price
+    
+    # 9. Momentum Indicators
+    df["ROC_5"] = df["Close"].pct_change(periods=5)  # Rate of Change over 5 periods
+    df["ROC_10"] = df["Close"].pct_change(periods=10)  # Rate of Change over 10 periods
+    df["Momentum"] = df["Close"] - df["Close"].shift(5)  # Price momentum
+    
+    # 10. Price Action Patterns
+    df["Higher_High"] = (df["High"] > df["High"].shift(1)).astype(int)
+    df["Lower_Low"] = (df["Low"] < df["Low"].shift(1)).astype(int)
+    df["Higher_Close"] = (df["Close"] > df["Close"].shift(1)).astype(int)
+    
+    # 11. Bollinger Band Position
+    df["BB_Position"] = (df["Close"] - df["BB_Lower"]) / (df["BB_Upper"] - df["BB_Lower"])  # 0-1 scale
+    df["BB_Width"] = (df["BB_Upper"] - df["BB_Lower"]) / df["BB_Mid"]  # Band width as % of price
+    
+    # 12. RSI-based signals
+    df["RSI_Overbought"] = (df["RSI_14"] > 70).astype(int)
+    df["RSI_Oversold"] = (df["RSI_14"] < 30).astype(int)
+    
+    # 13. MACD Histogram (difference between MACD and Signal)
+    df["MACD_Histogram"] = df["MACD"] - df["Signal_Line"]
+    
+    # 14. EMA Crossovers
+    df["EMA_8_20_Cross"] = (df["EMA_8"] > df["EMA_20"]).astype(int)  # Golden cross indicator
+    df["EMA_10_20_Cross"] = (df["EMA_10"] > df["EMA_20"]).astype(int)
+    
+    # 15. Price relative to EMAs
+    df["Price_vs_EMA_8"] = (df["Close"] - df["EMA_8"]) / df["EMA_8"]
+    df["Price_vs_EMA_20"] = (df["Close"] - df["EMA_20"]) / df["EMA_20"]
 
-    # 7. Create Target Column (BUY/SELL)
-    # If next period's close > current period's close â†’ BUY (1), else SELL (0)
+    # 16. Create Target Column (BUY/SELL) - Profit-Based
+    # Only mark as BUY (1) if the move is profitable after transaction costs
+    # Round trip cost = 2 * TRANSACTION_COST_PCT (0.08%), use MIN_PROFIT_THRESHOLD for safety
     df["Future_Close"] = df["Close"].shift(-1)
-    df["Target"] = (df["Future_Close"] > df["Close"]).astype(int)
+    
+    # Calculate price change percentage
+    price_change_pct = (df["Future_Close"] - df["Close"]) / df["Close"]
+    
+    # Target = 1 only if price change exceeds minimum profit threshold (profitable after costs)
+    # Target = 0 otherwise (including small moves that would lose money due to transaction costs)
+    df["Target"] = (price_change_pct > MIN_PROFIT_THRESHOLD).astype(int)
+    
+    # Also store the actual profit percentage for weighting during training
+    df["Profit_Pct"] = price_change_pct
 
     # Remove rows with NaN values caused by indicators
     df = df.dropna()
