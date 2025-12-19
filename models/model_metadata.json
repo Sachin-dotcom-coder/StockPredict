@@ -1,0 +1,39 @@
+{
+  "model_type": "XGBoost",
+  "features": [
+    "EMA_8",
+    "EMA_10",
+    "EMA_20",
+    "EMA_8_20_Cross",
+    "Price_vs_EMA_8",
+    "Price_vs_EMA_20",
+    "MACD",
+    "Signal_Line",
+    "MACD_Histogram",
+    "RSI_14",
+    "RSI_Oversold",
+    "RSI_Overbought",
+    "ROC_5",
+    "Momentum",
+    "BB_Position",
+    "BB_Width",
+    "ATR_Pct",
+    "Volume_Ratio",
+    "Volume_Trend",
+    "Minute_Return",
+    "Higher_Close"
+  ],
+  "training_date": "2025-12-19T19:02:13.137118",
+  "accuracy": 0.7383783783783784,
+  "f1_score": 0.16262975778546712,
+  "precision": 0.35074626865671643,
+  "recall": 0.10585585585585586,
+  "validation_profit": 8459.544381298841,
+  "train_samples": 7398,
+  "test_samples": 1850,
+  "stocks_used": [
+    "AAPL",
+    "TSLA"
+  ],
+  "feature_count": 21
+}
